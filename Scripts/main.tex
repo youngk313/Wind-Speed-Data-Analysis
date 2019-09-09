@@ -1,0 +1,175 @@
+\title{Micrometeorology Assignment 3}
+\documentclass[11pt]{article}
+\usepackage{setspace} %to set line spacing
+\usepackage{fullpage} %uses up more of the page
+\usepackage{titlesec} %to edit section titles
+\usepackage[round]{natbib} %for harvard referencing
+\usepackage{graphicx} %to import graphics
+\usepackage{subcaption}
+\usepackage{siunitx}
+\usepackage[title]{appendix}
+\usepackage{float}%for the H option in figures
+\usepackage{bigstrut} %for excel to latex tabular converter
+\usepackage{lscape} %for landscape pages
+\usepackage{pdfpages}
+\usepackage{amsmath} %\begin{align} - \end{align}
+\usepackage[framed,numbered]{mcode}  %imports and formats .m files
+
+
+%\myFigure{filename.jpg}{Description}{figx}{size}
+%\myFigure{}{}{}{}
+
+\newcommand{\myFigure}[4][0.8]{
+\begin{figure}[H] 
+
+	\centering
+	\setlength\fboxsep{1pt}
+	\setlength\fboxrule{0.5pt}
+%\fbox{\includegraphics[width=#1\textwidth]{#2}} %fbox draws a border.
+	\includegraphics[width=#1\textwidth]{#2}
+	\caption{\small #3}
+	\label{#4}
+\end{figure}
+}
+
+
+\setlength{\parindent}{0cm} %removes paragraph indentation
+
+%\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\it\bfseries}{\thesubsubsection}{1em}{}
+\begin{document}
+
+
+
+\setcounter{page}{1}
+\begin{Large}\begin{center}
+\textbf{Introduction to Micrometeorology}
+
+\textbf{Assignment 3 - Turbulence and Spectra}
+\end{center}\end{Large}
+
+%\setstretch{1} \\
+\begin{center}
+\begin{tabular}{rcl}
+Jaime Liew && s141777 \\ 
+Young Kwon && s163075 \\~\\
+\end{tabular}
+\end{center}
+%\raggedright
+
+\section{Introduction}
+This assignment focuses on spectral analysis of time series. Up until now, the main method of analyzing turbulence in wind was through basic statistical analysis in the time domain. Spectral analysis is performed in the frequency domain, and is useful for determining the periodic behaviour of wind, and the energy content available at each frequency. 
+
+\section{Spectra and the Discrete Fourier Transform}
+The power spectral density of a time series shows the energy content of a signal at each frequency. These frequencies can often be related to specific time scales. For example for a spectrum covering a year's worth of data, higher frequencies are associated with the variations in wind speeds that happen within minutes while the lower frequencies to the left of a spectrum are related to the variations that happen within days. To obtain the power spectrum of a continuous time series, the Fourier transform of the signal's autocovariance, $R_X(t)$, is taken:
+$$S_X(\omega) = \frac{1}{2\pi}\int^\infty_{-\infty}R_X(\tau)e^{-i\omega\tau}d\tau$$
+where $\omega$ is the angular frequency in radians per second. As the autocovariance must be calculated, this method for finding the power spectrum is computationally expensive. An equivalent way of computing the spectrum is:
+$$S_X(\omega) = \frac{1}{2\pi T}\left|\int^T_{0}X(\tau)e^{-i\omega\tau}d\tau\right|^2$$
+This method does not require the autocovariance, saving computational power. This assignment deals with discrete time series, which has an equivalent expression:
+$$S_X(\omega) = \frac{1}{2\pi Nf_s}\left|\sum^{N-1}_{n=0}X_ne^{-i\frac{2\pi ln}{N}}d\tau\right|^2$$
+where the sum term is the discrete Fourier transform (DFT). The discrete Fourier transform can be calculated using the fast Fourier transform algorithm (FFT), which is able to reduce the computational time of the transformation from $\mathcal{O}(n^2)$ time to $\mathcal{O}(n\log n)$ time.  
+It is worth noting that the spectrum can only be calculated up to half of the sampling frequency, $f_s = 1/\Delta t$, which is also known as the Nyquist frequency, $f_N$. Since the Fourier transform returns a symmetric spectrum from $-f_N$ to $f_N$, only the positive half is considered in this assignment. To conserve spectrum power, the one sided spectrum is doubled in all figures.
+\subsection{Log Smoothing Algorithm}
+Looking at Figure \ref{fig:spec1}, the blue lines represent the spectral power density of a two hour wind speed data set. As can be seen from the graph, the fluctuations of the spectrum increase dramatically as frequency increases. To mitigate this problem, the spectrum is filtered by dividing the spectrum into logarithmically spaced bins, and representing the logarithmic midpoint as the mean of each bin. For logarithmic spacing in base 10, the logarithmic mid point of a bin is located $10^{-\frac{1}{2}} \approx 31.6\%$ along the length of the bin interval. These smoothed spectral estimates are shown in orange in Figure \ref{fig:spec1}. 15 bin divisions are made for each decade.
+\subsection{K Averaging}
+By assuming stationarity in the time series, it is possible to split a long time series into multiple smaller series and take the average of each of their power spectra. In this case, $K$ is a predetermined value that specifies the number of divisions that are to be made:
+$$S_X(\omega) = \langle S_{X,k}(\omega)\rangle$$
+
+
+This strategy of $K$ averaging helps to smooth out the graph of the spectrum, especially in the high frequency range. It should be noted that taking the spectrum of shorter time series does not change the domain of the spectrum. Instead, it reduces the spectral resolution as the number of frequency bins in the spectrum is equal to the length of the time series signal. Information can be lost for large values of $K$ as the series length is less, and therefore the spectrum has a lower spectral resolution.
+
+\section{2 Hour Sprog\o s Data Set}
+Wind velocity data is collected over a 2 hour period with a sampling frequency of $f_s = 10 Hz$. As seen in Figure \ref{fig:time}, there are a number of large outlier values, which were omitted from the analysis. Ideally, data points would not be removed from a time series when performing spectral analysis as it introduces discrepancies in the sample spacing. However, this effect is considered negligible due to the large number of data points.
+
+\myFigure{Figures/figTime}{Time series data measured at the island of Sprog\o.}{fig:time}
+
+The spectrum is generated for the time series, and the logarithmic smoothing algorithm is used applied. Both are plotted in Figure \ref{fig:spec1}. 
+\myFigure{Figures/figSpec1}{Spectral power density of short term wind speed time series.}{fig:spec1}
+
+
+The fluctuations in the spectrum can be mitigated by splitting the time series into $K$ parts, and averaging their spectra. Figure \ref{fig:specK} shows how the spectrum (blue line) tends to converge with larger values of $K$. Although higher $K$ values produce a smoother spectrum, it also loses information as the spectral resolution decreases.
+\\~\\
+The spectrum is validated by comparing the area under the spectrum to the variance. If the spectrum calculation is consistent, then it should satisfy:
+
+$$\int_{-\infty}^\infty S_X(f)df = \sigma_X^2$$
+
+Table \ref{table:var} shows how these quantity vary for different values of K, as well as the area under the log-smoothed spectra. The true value for the variance is calculated to be $\sigma_X^2\approx 4.129$. It is clear that the $K$-average spectra maintain the correct variance properties as the area remains relatively constant. The log-smoothed curves do not remain consistent, however. This is due to the fact that the log-smoothing takes the average at the logarithmic midpoint, and it therefore misses the first points of the spectrum which contains a large amount of energy. The algorithm would need to be modified to add these initial points. $K$-averaging produces a converging spectrum while maintaining the variance properties of the spectrum. 
+\begin{table}[H]
+\centering
+\begin{tabular}{|c |c|c|c|c|}
+\hline
+$K$ & 1 & 10 & 50 & 100 \\
+\hline
+Spectrum Area & 4.129& 4.130& 4.133&4.136\\
+log-smoothed Spectrum Area & 3.85& 3.034& 2.276&1.736\\
+\hline
+\end{tabular}
+\caption{Area under spectra and log-smoothed spectra for various values of $K$.  }
+\label{table:var}
+\end{table}
+\myFigure{Figures/figKspecs}{Spectral power density of short term wind speeds for varying values of K.}{fig:specK}
+
+Interestingly, the spectrum closely resembles Kolmogorov's 5/3 law. This can be seen in Figure \ref{fig:spec53} as the slope of the loglog spectrum tends to $-5/3=-1.\bar{6}$. Kolmogorov's 5/3 law states that energy per length scale is a function of the eddy length scale, and follows the power law $S_X(k) \propto k^{-5/3}$. Where $S_X(k)$ is the spacial spectrum, and $k=1/L$ where L is the length scale of the turbulence. Although Kolmogorov's 5/3 law applies to length scales, it can be shown that length scales and time scales are proportional if Taylor's frozen turbulence hypothesis is assumed. 
+\myFigure{Figures/fig53Law}{Spectral energy density of short term wind speed time series. For higher frequencies, the energy follows Kolmogorov’s “5/3” Law.}{fig:spec53}
+
+
+
+\section{21 Year Sprog\o s Data Set}
+The data set used in assignment 1 is used to perform spectral analysis. This data set contains 21 years of wind speeds with sampling periods of 10 minutes. The data set is initially sanitized to remove invalid readings.
+\\~\\
+The spectrum and the log-smoothed spectrum is plotted in Figure \ref{fig:spec2}. The frequencies of a year ($~3.17\times10^{-8}Hz$) and a day ($~1.16^{-5}Hz$) are indicated with dotted lines in order to illustrate the annual and diurnal peaks. There is a clear annual peak due to the seasons. A small diurnal peak can also be seen in the log-smoothed spectrum. 
+
+\myFigure{Figures/figSpec2}{Spectral power density of long term wind speed time series.}{fig:spec2}
+From looking at Figure \ref{fig:spec2}, it is clear that the power is higher in the low frequency region and tapers off in the high frequency region of the spectrum. Intuitively this makes sense. The low frequency region represents the power from the usual expected wind speeds throughout months or years of wind at this site, and the wind speeds on these larger time scales are what comprise most of the power generated by the wind turbine. In the high frequency region, the power is related to the fluctuating wind speeds that last on smaller time scales such as minutes or hours. Since this turbulent behaviour is fleeting, the power contributed by these wind oscillations are expected to be low.  
+
+\section{Autoregressive Process}
+Spectral analysis was performed on an autoregressive process. It was established in the previous assignment that the autocorrelation of an autoregressive process is:
+$$R_X = \frac{\alpha^{|t|}}{1-\alpha^2}$$
+
+The absolute value of the time lag, $t$, is taken to represent the symmetric nature of the autocorrelation function. This relation can be used to find the theoretical value for the autoregressive spectrum. The spectrum as a function of frequency, $f$, which has units of Hertz is:
+
+$$S_X(f) = \int_{-\infty}^\infty R_X(\tau)e^{-i2\pi f\tau}d\tau$$
+Substituting the expression for $R_X$ into this equation gives:
+$$S_X = \int_{-\infty}^\infty \frac{\alpha^{|\tau|}}{1-\alpha^2}e^{-i2\pi f\tau}d\tau$$
+This expression can be decomposed into the co-spectrum and quadrature spectrum given Euler's formula, which states $e^{ix} = cos(x) + isin(x)$.
+$$S_X(f) = \int_{-\infty}^\infty \frac{\alpha^{|\tau|}}{1-\alpha^2}cos(2\pi f \tau )d\tau - i\int_{-\infty}^\infty \frac{\alpha^{|\tau|}}{1-\alpha^2}sin(2\pi f \tau )d\tau$$
+Since $R_X$ is an even function, the second integral is odd. Since the bounds of integration are symmetric, this integral evaluates to zero. Similarly, the first integral can be expressed as a one sided integral as it is even. What is left is a purely real expression for the spectral power density, which is the case for all autospectra of real time series:
+$$S_x(f) =\frac{2}{1-\alpha^2}\int_{0}^\infty \alpha^{\tau}cos(2\pi f \tau )d\tau$$
+
+Given that
+$$\int_0^\infty a^xcos(bx)dx = -\frac{ln(a)}{ln^2(a)+b^2} \qquad \qquad \qquad \text{for }\quad a<1$$
+It can be shown that
+$$S_X(f) = \frac{-2ln(\alpha)}{(1-\alpha^2)(ln^2(\alpha) + 4\pi^2f^2)}$$
+
+The spectral power density is found for autoregressive processes with varying values of $\alpha$ (Figure \ref{fig:spec3}), and are compared with the theoretical spectrum derived above. The sampling frequency is assumed to be $f_S = 1Hz$, and the signal length is $n=10^5$.
+
+\myFigure[0.95]{Figures/figSpec3}{Spectral power density of autoregressive processes with varying $\alpha$.}{fig:spec3}
+
+The calculated spectrum closely follows the theoretical spectrum function. Comparing the plots in Figure \ref{fig:spec3} to the spectra in Figures \ref{fig:spec1} and \ref{fig:spec2}, it is clear that the autoregressive process does not closely match the wind speed data spectra. Wind speeds tend to have a drop in power density for higher frequencies, whereas the autoregressive process continues to increase for the majority of frequencies. 
+
+\section{Conclusion}
+In this assignment, three different signals of wind speeds were evaluated using power spectrum analysis. This process involved converting the time series of each data set into the frequency domain by using the discrete Fourier transform which was implemented by using the fast Fourier transform (FFT) in the code. The validity of using the FFT to find the spectrum was proved by how close the values of the integrals of the power spectra were to the variance of the time series. It was possible to see how useful a tool spectrum analysis can be for breaking down the power contribution from the wind speeds at each time scale. For the autoregressive process, the theoretical calculation of the spectrum was confirmed to be equivalent to the Fourier transform of the autocovariance function by showing that the power spectrum of the time series using FFT converged towards the theoretical values. Like in the second assignment, it was shown again that an autoregressive process is not an accurate method of approximating wind speed data as the spectrum of the autoregressive process was quite different to that of the measured time series.
+\pagebreak
+\begin{appendices}
+\section{Spectrum Function}
+\lstinputlisting{Scripts/makeSpectrum.m}
+
+\section{Log-Smoothing Function}
+\lstinputlisting{Scripts/logSmoothing.m}
+
+\section{$K$-Averaging Spectrum Function}
+\lstinputlisting{Scripts/makeMeanSpectrum.m}
+
+\section{Main Script}
+\lstinputlisting{Scripts/Micro3.m}
+%\label{App1}
+%\lstinputlisting{autoRegProcess.m}
+%\lstinputlisting{Assigment2.m}
+
+
+
+\end{appendices}
+
+
+\end{document}
